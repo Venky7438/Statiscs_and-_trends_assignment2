@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 02 20:54:07 2023
-@author: Ajay Prabhat Gorrumuchu
+Created on Wed Dec 13 20:54:07 2023
+@author: Venkatesh
 """
 
 """
-# Importing Required Libraries
+# Libraries Required
 """
 
 import pandas as pd
@@ -17,26 +17,91 @@ from scipy.stats import skew
 from scipy.stats import kurtosis
 
 
-def world_bank_data_frame(path):
+def dataframe_loading_reading(filepath):
+    """
+        Load a CSV file into a pandas DataFrame
+        and create a reversed DataFrame.
 
-    df = pd.read_csv(path)
-    transposed = df.copy()
-    transposed[['Country Name','Time']] = transposed[['Time','Country Name']]
-    transposed = transposed.rename(columns={'Country Name': 'Time', 'Time': 'Country Name'})
-    cleanedDataset = transposed.dropna()
-    return df , transposed , cleanedDataset
+        Parameters:
+        - filepath (str): The file path to the CSV file.
 
-def claimsOnCentralGov(Data):
-    for country in countryList:
+        Returns:
+        - df : Original DataFrame loaded from the CSV file.
+        - df_reverse : Reversed DataFrame with 'Country Name'
+        and 'Time' columns swapped.
+    """
+    df = pd.read_csv(filepath)
+    df_reverse = df.copy()
+    df_reverse[['Country Name' , 'Time']] =  \
+        df_reverse[['Time' , 'Country Name']]
+    df_reverse = \
+        df.rename(columns = {'Country Name': 'Time' , 'Time': 'Country Name'})
+
+    return df,df_reverse
+
+
+def kurtosisMap(Data , value):
+    """
+        Create a bar plot to visualize the kurtosis of a variable.
+
+        Parameters:
+        - Data (list or array-like): Data points or
+        categories for the x-axis.
+        - value (float): The kurtosis value to be plotted.
+
+        Returns:
+        None
+    """
+    plt.bar(Data , [value] , color = 'blue')
+    plt.title('kurtosis plot for Current health expenditure' ,
+              fontsize = 17)
+    plt.ylabel('Kurtosis')
+    plt.show()
+
+
+def skewMap(Data , value):
+    """
+        Create a bar plot to visualize the skewness of a variable.
+
+        Parameters:
+        - Data (list or array-like): Data points or categories for the x-axis.
+        - value (float): The skewness value to be plotted.
+
+        Returns:
+        None
+    """
+    plt.figure(figsize = (6 , 4))
+    plt.bar(Data , [value] , color = 'blue')
+    plt.title('People using safely managed drinking water services (% of population)'
+              , fontsize = 17)
+    plt.ylabel('Skewness')
+    plt.show()
+
+
+def lineMap(Data):
+    """
+        Create a line plot to visualize the trend of a variable over time
+        for selected countries.
+
+        Parameters:
+        - Data (pd.DataFrame): DataFrame containing data for multiple
+        countries and years.
+
+        Returns:
+        None
+    """
+
+    for country in ['Singapore' , 'Malaysia' , 'Canada' , 'France' , 'Germany']:
         country_data = Data[Data['Country Name'] == country]
-        plt.plot(country_data['Time'],
-                 country_data['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'],
-                 label=country)
+        plt.plot(country_data['Time'] ,
+                 country_data
+                 ['Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]'] ,
+                 label = country)
 
     # Adding labels and title
     plt.xlabel('Year')
-    plt.ylabel('Claims on central government')
-    plt.title('Claims on central government (annual growth as % of broad money)', fontsize=17)
+    plt.ylabel('Current health expenditure')
+    plt.title('Current health expenditure' , fontsize = 17)
 
     # Adding legend
     plt.legend()
@@ -46,153 +111,89 @@ def claimsOnCentralGov(Data):
     plt.show()
 
 
-def stocksTradedPercentOfGdp(data):
-    # Plotting the bar graph
-    data.plot(kind='bar', stacked=True, figsize=(10, 6))
-    plt.title('Stock Trades of Three Countries Over Years')
-    plt.xlabel('Year')
-    plt.ylabel('Stocks traded (% of GDP)')
-    plt.legend(title='Country')
-    plt.show()
+#Read and loading datasets
+countryData , timeData = dataframe_loading_reading('Dataset.csv')
+print("country data")
+print(countryData.head())
+print("time data")
+print(timeData.head())
+
+#Statistical analysis methods
+countryData['Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]']\
+    = pd.to_numeric(countryData['Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]'] ,
+                    errors = 'coerce')
+describes_statistics = \
+    countryData['Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]']\
+        .describe()
+print(describes_statistics)
+
+median_statistics = countryData['Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]']\
+    .median()
+print("median statistics" , median_statistics)
+
+#kurtosis value
+kurtosisData = countryData['Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]']\
+    .dropna()
+kurtosis_value = kurtosis(kurtosisData , fisher=False)
+print("Kurtosis:" , kurtosis_value)
+kurtosisMap(kurtosisData , kurtosis_value)
+
+#skewness value
+countryData['People using safely managed drinking water services']\
+    = pd.to_numeric(countryData['People using safely managed drinking water services'] ,
+                    errors = 'coerce')
+skewnessData = countryData['People using safely managed drinking water services'].dropna()
+skewValue = skewnessData.skew()
+# Plotting the skewness value
+skewMap(skewnessData , skewValue)
+
+lineMap(countryData)
+
+barGraphData = countryData[countryData['Country Name'] == 'Canada']
+selected_indicators = ['People using at least basic drinking water services' ,
+                       'People using at least basic sanitation services' ,
+                       'People using safely managed drinking water services']
+bar_width = 0.2
+barGraphData['People using at least basic drinking water services'] = \
+    pd.to_numeric(barGraphData['People using at least basic drinking water services'] ,
+                  errors='coerce')
+bar_positions = np.arange(len(barGraphData['People using at least basic drinking water services']))
+
+# Create bar plots for each indicator
+for i , indicator in enumerate(barGraphData[selected_indicators]):  # Exclude 'Country Name'
+    plt.bar(bar_positions + i * bar_width , barGraphData[indicator] ,
+            width = bar_width , label = indicator)
+
+# Set the labels and title
+plt.xlabel('Year')
+plt.ylabel('Values')
+plt.title('Grouped Bar Plot of Indicators for Australia' , fontsize = 18)
+
+# Set the x-axis ticks and labels
+plt.xticks(bar_positions + bar_width , barGraphData['Time'])
+
+# Display the legend
+plt.legend()
+
+# Show the plot
+plt.show()
+
+pieData = countryData[countryData['Time'] == 2020]
+# Plotting the pie chart
+plt.figure(figsize = (8 , 8))
+plt.pie(pieData['Tuberculosis case detection rate (%, all forms) [SH.TBS.DTEC.ZS]'] ,
+        labels = pieData['Country Name'] , autopct = '%1.1f%%' , startangle = 140)
+plt.title('Tuberculosis case detection rate of each  Country')
+plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+plt.show()
 
 
-def wholeSalePriceIndex(data):
-    # Plotting a pie chart using Seaborn and Matplotlib
-    plt.figure(figsize=(8, 8))
-    plt.title('Wholesale price index (INDIA)', fontsize=17)
-    # Create a pie chart using matplotlib
-    plt.pie(data['Wholesale price index (2010 = 100) [FP.WPI.TOTL]'], labels=data['Time'],
-            autopct='%1.1f%%', startangle=140)
-    # Display the chart
-    plt.show()
 
 
-def realIntrestRate(data):
-    for country in IntrestedCountries:
-        country_data = data[data['Country Name'] == country]
-        plt.plot(country_data['Time'],
-                 country_data['Real interest rate (%) [FR.INR.RINR]'],
-                 label=country)
-
-    # Adding labels and title
-    plt.xlabel('Year')
-    plt.ylabel('Real interest rate (%) ')
-    plt.title('Real interest rate (%) of different countries', fontsize=17)
-
-    # Adding legend
-    plt.legend()
-
-    # Display a grid
-    plt.grid(True)
-    plt.show()
 
 
-def Stocks_traded(data):
-    # Plotting using Seaborn
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x='Country Name', y='Stocks traded, total value (current US$) [CM.MKT.TRAD.CD]',
-                data=data, palette='viridis', legend=False)
-    plt.title('Stocks traded, total value (current US$) in 2019', fontsize=17)
-    plt.xlabel('Country')
-    plt.ylabel('Stocks traded, total value (current US$)')
-    plt.show()
 
 
-def commercialBank(data):
-    sns.set(style="whitegrid")
-    # Plotting a pie chart using Matplotlib with Seaborn style
-    plt.figure(figsize=(8, 8))
-    plt.title('Commercial bank branches (per 100,000 adults)', fontsize=17)
 
-    # Create a pie chart using matplotlib
-    plt.pie(data['Commercial bank branches (per 100,000 adults) [FB.CBK.BRCH.P5]'], labels=data['Country Name'],
-            autopct='%1.1f%%', startangle=140)
-
-    # Display the chart
-    plt.show()
-
-
-dataTime , dataCountry , cleanedData = world_bank_data_frame('Dataset.csv')
-print("Data Country")
-print(dataCountry.head())
-print("Data Time")
-print(dataTime.head())
-print("cleaned dataset")
-print(cleanedData.head())
-
-"""
-Task 2: Statistical Methods 
-"""
-#Describes Method
-dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'] = pd.to_numeric(dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'],errors='coerce')
-describeMethod = dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'].describe()
-print(describeMethod)
-
-#Median
-median = dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'].median()
-print("median",median)
-
-#mode
-mode = dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'].mode()
-print("mode",mode)
-
-#skewness
-skewnessvalue = dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'].skew()
-print('skewness',skewnessvalue)
-
-#kurtosis
-kurtosisvalue = dataCountry['Claims on central government (annual growth as % of broad money) [FM.AST.CGOV.ZG.M3]'].kurtosis()
-print('kurtosis',kurtosisvalue)
-
-#Visualizations
-#Line Graph
-countryList = ['Australia','Canada','China','Germany','India','Malaysia']
-dataCountry['Time'] = pd.to_numeric(dataCountry['Time'],errors='coerce')
-lineGraphdataCountry = dataCountry[(dataCountry['Time'] >= 2010) & (dataCountry['Time'] <= 2020)]
-
-claimsOnCentralGov(lineGraphdataCountry)
-
-#BAR GRAPH
-# barGraphData = dataCountry[(dataCountry['Country Name']) == 'United Kingdom']
-# barGraphData['Time'] = pd.to_numeric(barGraphData['Time'],errors='coerce')
-barGraphData = dataCountry.copy()
-selected_countries = ['Malaysia', 'United States', 'China']
-filtered_data = barGraphData[barGraphData['Country Name'].isin(selected_countries)]
-filtered_data = filtered_data[(filtered_data['Time'] >= 2010) & (filtered_data['Time'] <= 2019)]
-filtered_data['Stocks traded, total value (% of GDP) [CM.MKT.TRAD.GD.ZS]'] = pd.to_numeric(filtered_data['Stocks traded, total value (% of GDP) [CM.MKT.TRAD.GD.ZS]'],errors='coerce')
-
-pivot_df = filtered_data.pivot(index='Time', columns='Country Name', values='Stocks traded, total value (% of GDP) [CM.MKT.TRAD.GD.ZS]')
-stocksTradedPercentOfGdp(pivot_df)
-
-#Pie graph
-pieGraphData = dataCountry[dataCountry['Country Name'] == 'India']
-pieGraphData = pieGraphData.dropna()
-print(pieGraphData['Wholesale price index (2010 = 100) [FP.WPI.TOTL]'])
-pieGraphData['Time'] = pd.to_numeric(pieGraphData['Time'],errors='coerce')
-pieGraphData['Wholesale price index (2010 = 100) [FP.WPI.TOTL]'] = pd.to_numeric(pieGraphData['Wholesale price index (2010 = 100) [FP.WPI.TOTL]'],errors='coerce')
-
-wholeSalePriceIndex(pieGraphData)
-
-
-#real intrest rate
-IntrestedCountries = ['China','India','Indonesia','Malaysia','United States']
-realIntrestData = dataCountry[(dataCountry['Time'] >= 2000) & (dataCountry['Time'] <= 2015)]
-# realIntrestData= dataCountry[dataCountry['Country Name'].isin(selected_countries)]
-
-realIntrestRate(realIntrestData)
-
-# Filter data for the year 2019
-Stocks_traded_2019 = dataCountry[dataCountry['Time'] == 2019].dropna()
-IntrestedCountries = ['China','India','Indonesia','Malaysia','Afghanistan','Australia','Canada','Germany','Indonesia','Poland']
-stock_trade_dollar_2019 = Stocks_traded_2019[Stocks_traded_2019['Country Name'].isin(IntrestedCountries)]
-
-Stocks_traded(stock_trade_dollar_2019)
-
-#Deposit Intrest Rate
-commercial_bank_branches = dataCountry[dataCountry['Time']==2019]
-commercial_bank_branches  = commercial_bank_branches .dropna()
-commercial_bank_branches ['Commercial bank branches (per 100,000 adults) [FB.CBK.BRCH.P5]'] = pd.to_numeric(commercial_bank_branches ['Commercial bank branches (per 100,000 adults) [FB.CBK.BRCH.P5]'],errors='coerce')
-
-commercialBank(commercial_bank_branches)
 
 
